@@ -1,0 +1,18 @@
+# Java compile output
+*.class
+
+# Package archives
+*.jar
+*.war
+*.ear
+
+# Build directories
+bin/
+target/
+
+# VS Code settings (optional to ignore)
+.vscode/
+
+# Miscellaneous
+*.log
+.DS_Store
