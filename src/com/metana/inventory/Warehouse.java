@@ -1,8 +1,11 @@
 package com.metana.inventory;
 
+import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
  * Represents a warehouse location that stores inventory.
@@ -12,34 +15,104 @@ import java.util.PriorityQueue;
 public class Warehouse {
   private String warehouseId;           // unique ID or name for the warehouse
   private Map<String, PriorityQueue<ProductBatch>> inventoryByProduct;   // inventory stock: itemId -> min-heap of its batches
+  private Set<String> usedBatchIds = new HashSet<>();
 
   public Warehouse(String warehouseId) {
     this.warehouseId = warehouseId;
     this.inventoryByProduct = new HashMap<>();
   }
 
-  // Add or update stock for an item in this warehouse
-  public void addItemStock(String itemId, int quantity) {
-    // If item already exists, increment quantity : otherwise add new entry.
-    stock.put(itemId, stock.getOrDefault(itemId, 0) + quantity);
+  public void addStock(String productId, int quantity, String batchId, LocalDate expiryDate) {
+    // 1.  Basic validation checks
+    if (quantity <= 0) {
+      throw new IllegalArgumentException("Quantity must be positive.");
+    }
+
+    LocalDate today = LocalDate.now();
+    if (expiryDate.isBefore(today)) {
+      throw new IllegalArgumentException("Cannot add stock that's already expired.");
+    }
+
+    if (usedBatchIds.contains(batchId)) {
+      throw new IllegalArgumentException("Duplicate batchId: " + batchId);
+    }
+
+    // 2. Create the new batch
+    ProductBatch newBatch = new ProductBatch(productId, quantity, batchId, expiryDate);
+
+    // 3. Add to product's priority queue in inventory
+    PriorityQueue<ProductBatch> pq = inventoryByProduct.get(productId);
+    if (pq == null) {
+      // No queue for ths product yet, create one
+      pq = new PriorityQueue<>();
+      inventoryByProduct.put(productId, pq);
+    }
+    pq.add(newBatch);
+    // Now the smallest expiry batch for this product will be at pq.peek();
+
+    usedBatchIds.add(batchId);
+
+    // 4. Confirmation for testing
+    System.out.println("Added stock: " + productId + ", batch " + batchId + "(qty=" + quantity + ", exp=" + expiryDate + ")");
   }
 
-  // Get available quantity of a given item in this warehouse
-  public int getStock(String itemId) {
-    return stock.getOrDefault(itemId, 0);
+  public void purgeExpiredStock(LocalDate currentDate) {
+    for (Map.Entry<String, PriorityQueue<ProductBatch>> entry : inventoryByProduct.entrySet()) {
+      PriorityQueue<ProductBatch> pq = entry.getValue();
+      // Remove expired batches for this product
+      while (!pq.isEmpty()) {
+        ProductBatch earliestBatch = pq.peek();
+        if (earliestBatch.getExpiryDate().isBefore(currentDate) || earliestBatch.getExpiryDate().isEqual(currentDate)) {
+          // this batch is expired as of currentDate
+          pq.poll(); // remove it from the queue
+          System.out.println("Removed expired batch " + earliestBatch.getBatchId() + " of product " + entry.getKey());
+        } else {
+          // the earliest batch is not expired yet, so none others are expired
+          break;
+        }
+      }
+    }
+  }
+
+  public int getAvailableStock(String productId) {
+    PriorityQueue<ProductBatch> pq = inventoryByProduct.get(productId);
+    if (pq == null || pq.isEmpty()) {
+      return 0;
+    }
+    // ensure no expired stock is lurking
+    LocalDate today = LocalDate.now();
+    // could call `purgeExpiredStock(today)` here, but that would check all products.
+    // to be precise for this product only, we can use a similar loop as purge for this queue.
+    while (!pq.isEmpty() && pq.peek().getExpiryDate().isBefore(today) || pq.peek().getExpiryDate().isEqual(today)) {
+      pq.poll(); // remove expired batch
+    }
+
+    // sum quantities of remaining batches
+    int totalQuantity = 0;
+    for (ProductBatch batch : pq) {
+      totalQuantity += batch.getQuantity();
+    }
+    return totalQuantity;
+  }
+
+  public ProductBatch getNextExpiringBatch(String productId) {
+    PriorityQueue<ProductBatch> pq = inventoryByProduct.get(productId);
+    if (pq == null || pq.isEmpty()) {
+      return null;
+    }
+    // Ensure the next batch isn't expired as of now; if it is, purge it.
+    ProductBatch nextBatch = pq.peek();
+    LocalDate today = LocalDate.now();
+    if (nextBatch.getExpiryDate().isBefore(today)) {
+      // remove expired batch and get the next one
+      pq.poll();
+      return getNextExpiringBatch(productId); // recursive call after removal
+    }
+    return nextBatch;
   }
 
   // Getters for warehouse properties
   public String getWarehouseId() {
     return warehouseId;
-  }
-
-  // Method to remove stock when an item is shipped out
-  public boolean removeItemStock(String itemId, int quantity) {
-    if (stock.containsKey(itemId) && stock.get(itemId) >= quantity) {
-      stock.put(itemId, stock.get(itemId) - quantity);
-      return true;
-    }
-    return false;
   }
 }
