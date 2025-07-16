@@ -8,7 +8,7 @@ public class OrderProcessor {
   private InventoryManager inventoryManager;
   private RouteOptimizer routeOptimizer;
 
-  public orderProcessor(InventoryManager inventoryManager, RouteOptimizer routeOptimizer) {
+  public OrderProcessor(InventoryManager inventoryManager, RouteOptimizer routeOptimizer) {
     this.inventoryManager = inventoryManager;
     this.routeOptimizer = routeOptimizer;
   }

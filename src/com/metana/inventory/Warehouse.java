@@ -2,6 +2,7 @@ package com.metana.inventory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 /**
  * Represents a warehouse location that stores inventory.
@@ -10,13 +11,11 @@ import java.util.Map;
 
 public class Warehouse {
   private String warehouseId;           // unique ID or name for the warehouse
-  private String location;              // e.g., city or region name
-  private Map<String, Integer> stock;   // inventory stock: itemId -> quantity available
+  private Map<String, PriorityQueue<ProductBatch>> inventoryByProduct;   // inventory stock: itemId -> min-heap of its batches
 
-  public Warehouse(String warehouseId, String location) {
+  public Warehouse(String warehouseId) {
     this.warehouseId = warehouseId;
-    this.location = location;
-    this.stock = new HashMap<>();
+    this.inventoryByProduct = new HashMap<>();
   }
 
   // Add or update stock for an item in this warehouse
@@ -33,10 +32,6 @@ public class Warehouse {
   // Getters for warehouse properties
   public String getWarehouseId() {
     return warehouseId;
-  }
-
-  public String getLocation() {
-    return location;
   }
 
   // Method to remove stock when an item is shipped out

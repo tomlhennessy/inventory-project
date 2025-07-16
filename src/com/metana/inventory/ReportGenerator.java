@@ -1,5 +1,7 @@
 package com.metana.inventory;
 
+import java.util.List;
+
 /**
  * Generates reports based on inventory and order data.
  * For example, inventory levels per warehouse or order fulfilment statistics.
