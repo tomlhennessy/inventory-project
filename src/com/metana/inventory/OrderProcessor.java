@@ -23,7 +23,7 @@ public class OrderProcessor {
     List<Warehouse> warehousesUsed = new ArrayList<>();
 
     // Iterate over each item in the order (product ID -> quantity needed)
-    for (Map.entry<String, Integer> entry : order.getItems().entrySet()) {
+    for (Map.Entry<String, Integer> entry : order.getItems().entrySet()) {
       String productId = entry.getKey();
       int quantityNeeded = entry.getValue();
 

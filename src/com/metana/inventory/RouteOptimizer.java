@@ -1,5 +1,7 @@
 package com.metana.inventory;
 
+import java.util.List;
+
 /**
  * Resposible for optimizing delivery routes.
  * Given order details and warehouse locations, it can calculate the most efficient route.
@@ -11,4 +13,9 @@ public class RouteOptimizer {
   // TODO: Implement route calculation logic.
   // e.g. use algorithms like Dijsktra's or a heuristic to plan the shortest delivery path
   // connecting sourceWarehouses to the order destination.
+
+  public void planRoute(String destination, List<Warehouse> warehousesUsed) {
+    // TODO: implement route optimization later
+    System.out.println("Planning route (stub) to " + destination);
+  }
 }

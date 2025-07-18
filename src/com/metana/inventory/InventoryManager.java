@@ -29,5 +29,11 @@ public class InventoryManager {
     return null;
   }
 
+  // get list of warehouses
+  public List<Warehouse> getWarehouses() {
+    return warehouses;
+  }
+
+
   // (other inventory manegement methods like transferStock, totalStock, etc. can be added later)
 }

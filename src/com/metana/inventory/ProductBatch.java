@@ -21,6 +21,10 @@ public class ProductBatch implements Comparable<ProductBatch> {
   public String getBatchId() { return batchId; }
   public LocalDate getExpiryDate() {return expiryDate; }
 
+  public void setQuantity(int quantity) {
+    this.quantity = quantity;
+  }
+
   @Override
   public int compareTo(ProductBatch other) {
     // Compare by expiry date (earlier date = "smaller")

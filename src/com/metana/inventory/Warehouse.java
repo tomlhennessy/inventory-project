@@ -56,6 +56,36 @@ public class Warehouse {
     System.out.println("Added stock: " + productId + ", batch " + batchId + "(qty=" + quantity + ", exp=" + expiryDate + ")");
   }
 
+  public void removeStock(String productId, int quantity) {
+    if (quantity <= 0) {
+      throw new IllegalArgumentException("Quantity must be positive.");
+    }
+
+    PriorityQueue<ProductBatch> pq = inventoryByProduct.get(productId);
+    if (pq == null || pq.isEmpty()) {
+      return; // no stock
+    }
+
+    LocalDate today = LocalDate.now();
+    // purge any expired batches first
+    while (!pq.isEmpty() && !pq.peek().getExpiryDate().isAfter(today)) {
+      pq.poll();
+    }
+    // Remove from the earliest expiring batches
+    while (quantity > 0 && !pq.isEmpty()) {
+      ProductBatch batch = pq.peek();
+      if (batch.getQuantity() > quantity) {
+        // Decrement quantity in the batch
+        batch.setQuantity(batch.getQuantity() - quantity);
+        quantity = 0;
+      } else {
+        // remove this whole batch and continue
+        quantity -= batch.getQuantity();
+        pq.poll();
+      }
+    }
+  }
+
   public void purgeExpiredStock(LocalDate currentDate) {
     for (Map.Entry<String, PriorityQueue<ProductBatch>> entry : inventoryByProduct.entrySet()) {
       PriorityQueue<ProductBatch> pq = entry.getValue();
@@ -83,9 +113,12 @@ public class Warehouse {
     LocalDate today = LocalDate.now();
     // could call `purgeExpiredStock(today)` here, but that would check all products.
     // to be precise for this product only, we can use a similar loop as purge for this queue.
-    while (!pq.isEmpty() && pq.peek().getExpiryDate().isBefore(today) || pq.peek().getExpiryDate().isEqual(today)) {
-      pq.poll(); // remove expired batch
+    while (!pq.isEmpty() &&
+      (pq.peek().getExpiryDate().isBefore(today)
+       || pq.peek().getExpiryDate().isEqual(today))) {
+    pq.poll();
     }
+
 
     // sum quantities of remaining batches
     int totalQuantity = 0;
