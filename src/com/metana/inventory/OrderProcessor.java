@@ -1,6 +1,7 @@
 package com.metana.inventory;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -19,49 +20,64 @@ public class OrderProcessor {
 
   // Process an order: allocate items from warehouses and initiate delivery
   public void processOrder(Order order) {
-    // Keep track of which warehouses will supply items for this order
+    // Up front availability check
+    for (Map.Entry<String,Integer> e : order.getItems().entrySet()) {
+      if (inventoryManager.getTotalStock(e.getKey()) < e.getValue()) {
+        System.out.println("Not enough stock for Order " + order.getOrderId());
+        return;
+      }
+    }
+    // Allocate greedily by nearest warehouse, while each warehouse consumes FEFO batches
     List<Warehouse> warehousesUsed = new ArrayList<>();
 
     // Iterate over each item in the order (product ID -> quantity needed)
     for (Map.Entry<String, Integer> entry : order.getItems().entrySet()) {
       String productId = entry.getKey();
-      int quantityNeeded = entry.getValue();
+      int needed = entry.getValue();
 
-      // Try to fulfill this item's quantity using the available warehouses
-      for (Warehouse warehouse : inventoryManager.getWarehouses()) {
-        // check how much stock this warehouse has for the product
-        int available = warehouse.getAvailableStock(productId);
-        if (available <= 0) {
-          continue; // skip warehouses that have none of this product
+      // collect candidates that actually have stock
+      List<Warehouse> candidates = new ArrayList<>();
+      for (Warehouse w : inventoryManager.getWarehouses()) {
+        if (w.getAvailableStock(productId) > 0) candidates.add(w);
+      }
+      // sort by Euclidean distance to customer
+      candidates.sort(Comparator.comparingDouble(
+        w -> distance(w.getX(), w.getY(), order.getCustomerX(), order.getCustomerY())
+      ));
+
+      for (Warehouse w : candidates) {
+        if (needed <= 0) break;
+        int avail = w.getAvailableStock(productId);
+        if (avail <= 0) continue;
+        int toTake = Math.min(needed, avail);
+
+        // FEFO happens inside this call, and we get back exact batches used
+        List<Warehouse.BatchAllocation> used = w.removeStock(productId, toTake);
+        if (!used.isEmpty() && !warehousesUsed.contains(w)) { warehousesUsed.add(w); }
+
+        // Print per-batch allocations
+        for (Warehouse.BatchAllocation ba : used) {
+          System.out.println("- " + w.getWarehouseId() + ": " + ba.productId + ", " + ba.quantityTaken + " (" + ba.batchId + ")");
         }
 
-        if (available >= quantityNeeded) {
-          // This warehouse can fill the entire required quantity
-          warehouse.removeStock(productId, quantityNeeded); // allocate all from this warehouse
-          warehousesUsed.add(warehouse);
-          quantityNeeded = 0; // order's need for this item
-          break; // exit the warehouse loop for this item
-        } else {
-          // warehouse can only fulfill part of the requirement
-          warehouse.removeStock(productId, available); // take all available stock from this warehouse
-          warehousesUsed.add(warehouse);
-          quantityNeeded -= available; // reduce the remaining quantity needed
-          // continue to the next warehouse fo fulfill the rest
-        }
+        // reduce remaining need
+        int actuallyTaken = used.stream().mapToInt(b -> b.quantityTaken).sum();
+        needed -= actuallyTaken;
       }
 
-      // After checking all warehouses, see if we still need more of this item
-      if (quantityNeeded > 0) {
-        // Not enough stock overall to fulfill the item completely
-        System.out.println("Order: " + order.getOrderId() + ": Could not fully fulfill item " + productId + "(short by " + quantityNeeded + " units).");
-        // might mark as backordered or take other actions in a real system
+      if (needed > 0) {
+        System.out.println("Order " + order.getOrderId() + ": Could not fully fulfill item " + productId + " (short by " + needed + " units).");
+        return;
       }
     }
-
-    // Plan the delivery route from the used warehouses to the order's destination
+        // Plan the delivery route from the used warehouses to the order's destination
     if (!warehousesUsed.isEmpty()) {
       routeOptimizer.planRoute(order.getDestination(), warehousesUsed);
     }
+  }
 
+  private double distance(int x1, int y1, int x2, int y2) {
+    double dx = x1 - x2, dy = y1 = y2;
+    return Math.sqrt(dx*dx + dy*dy);
   }
 }

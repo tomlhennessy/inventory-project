@@ -16,10 +16,14 @@ public class Warehouse {
   private String warehouseId;           // unique ID or name for the warehouse
   private Map<String, PriorityQueue<ProductBatch>> inventoryByProduct;   // inventory stock: itemId -> min-heap of its batches
   private Set<String> usedBatchIds = new HashSet<>();
+  private int x;
+  private int y;
 
-  public Warehouse(String warehouseId) {
+  public Warehouse(String warehouseId, int x, int y) {
     this.warehouseId = warehouseId;
     this.inventoryByProduct = new HashMap<>();
+    this.x = x;
+    this.y = y;
   }
 
   public void addStock(String productId, int quantity, String batchId, LocalDate expiryDate) {
@@ -145,7 +149,7 @@ public class Warehouse {
   }
 
   // Getters for warehouse properties
-  public String getWarehouseId() {
-    return warehouseId;
-  }
+  public String getWarehouseId() { return warehouseId; }
+  public int getX() { return x; }
+  public int getY() { return y; }
 }

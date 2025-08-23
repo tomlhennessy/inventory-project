@@ -1,5 +1,7 @@
 package com.metana.inventory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -8,26 +10,22 @@ import java.util.Map;
  */
 
 public class Order {
-  private String orderId;
-  private Map<String, Integer> items;     // items in the order: itemId -> quantity requested
-  private String destination;             // delivery destination (e.g., customer address or city)
+  private int customerX, customerY;     // Customer coordinates
+  private int windowStart, windowEnd;   // Delivery time window (in hours, e.g. 9 and 17)
 
-  public Order(String orderId, Map<String, Integer> items, String destination) {
+  // Constructor
+  public Order(String orderId, Map<String,Integer> items, String destination, int customerX, int customerY, int windowStart, int windowEnd) {
     this.orderId = orderId;
+    this.customerX = customerX;
+    this.customerY = customerY;
+    this.windowStart = windowStart;
+    this.windowEnd = windowEnd;
     this.items = items;
     this.destination = destination;
   }
 
-  // Getters
-  public String getOrderId() {
-    return orderId;
-  }
-
-  public Map<String, Integer> getItems() {
-    return items;
-  }
-
-  public String getDestination() {
-    return destination;
-  }
+  public int getCustomerX() { return customerX; }
+  public int getCustomerY() { return customerY; }
+  public int getWindowStart() { return windowStart; }
+  public int getWindowEnd() { return windowEnd; }
 }
